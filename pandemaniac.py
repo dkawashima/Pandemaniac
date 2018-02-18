@@ -4,62 +4,60 @@ import numpy as np
 import networkx as nx
 import operator
 import sys
-import argparse
-# INPUT FILE IS OF FORM x.y.z.json 
-# where x is number of players, y is the number of seeds, z is ID # for graph
 
 # testgraph1.json has 500 nodes
 # testgraph2.json has 1000 nodes
 
 def main():
+    ''' Main function: Gets user input and creates necessary output files
     '''
-    Parses arguments of the form
-        pandemaniac.py <input graph> <strategy>
+    filename, num_seeds, strategies = get_user_input()
+    GRAPH_FILENAME = filename + ".json"
 
+    G = load_graph(GRAPH_FILENAME)
+    NUM_ITERATIONS = 50
+    for s in strategies:
+        strategy = s.lower()
+        if strategy == 'r':
+            output = random_strategy(G, NUM_ITERATIONS, num_seeds) 
+        elif strategy == 'd':   
+            output = degree_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'e':
+            output = eigenvector_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'b':
+            output = betweenness_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'k':
+            output = katz_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
+        raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
+        output_filename = raw_file + "_" + strategy + '.txt'
+        output_list(output_filename, output)
+        print(strategy + " successfully generated.")
+    return
+
+def get_user_input():
+    ''' Gets user input for name of graph and strategies to run
     where the strategies are:
     R/r : Random
     D/d: Degree centrality
     B/b: Betweenness centrality
     K/k: Katz centrality
     E/e: Eigenvector centrality
+
+    Also extrapolates the num_seeds from the name of the graph
+
+    Arguments: n/a
+    Returns:   name of graph, number of seeds, list of strategies
     '''
-    parser = argparse.ArgumentParser("Pandemaniac Solver")
-    parser.add_argument("-f", "--filename", help = 
-        "Name (.json not required) of the file containing the input graph. " +
-        "Should be in JSON format."
-        , type=str, required=True)
-    parser.add_argument("-n", "--num_seeds", help = "Number of seed nodes to " +
-        "start out with.", 
-        type=int, required=True)
-    parser.add_argument("-s", "--strategy", help = 
-        "Strategy to use: R/r - random, D/d - degree, B/b - betweenness", 
-        type=str, required=True)
+    filename = raw_input("Enter the filename (leave out .json extension) -> ")
+    # INPUT FILE IS OF FORM x.y.z
+    # where x is number of players, y is the number of seeds, z is ID # for graph
+    filename_split = filename.strip().split('.')
+    assert(len(filename_split) == 3)
+    num_seeds = filename_split[1]
+    strategy_str = raw_input ("Enter the strategies to run separated by spaces -> ")
+    strategy_lst = strategy_str.strip().split()
 
-    args = parser.parse_args()
-    if ".json" in args.filename:
-        GRAPH_FILENAME = args.filename
-    else:
-        GRAPH_FILENAME = args.filename + ".json"
-
-    G = load_graph(GRAPH_FILENAME)
-    NUM_ITERATIONS = 50
-    NUM_SEEDS = args.num_seeds;
-
-    strategy = args.strategy.lower()
-    if strategy == 'r':
-        output = random_strategy(G, NUM_ITERATIONS, NUM_SEEDS) 
-    elif strategy == 'd':   
-        output = degree_centrality_strategy(G, NUM_ITERATIONS, NUM_SEEDS)
-    elif strategy == 'b':
-        output = betweenness_centrality_strategy(G, NUM_ITERATIONS, NUM_SEEDS)
-    elif strategy == 'k':
-        output = katz_centrality_strategy(G, NUM_ITERATIONS, NUM_SEEDS)
-    elif strategy == 'e':
-        output = eigenvector_centrality_strategy(G, NUM_ITERATIONS, NUM_SEEDS)
-    raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
-    output_filename = raw_file + "_" + args.strategy + '.txt'
-    output_list(output_filename, output)
-    return
+    return filename, int(num_seeds), strategy_lst
 
 def load_graph(filename):
     ''' Loads in the graph.
