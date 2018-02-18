@@ -4,6 +4,7 @@ import numpy as np
 import networkx as nx
 import operator
 import sys
+from heapq import nlargest
 
 # testgraph1.json has 500 nodes
 # testgraph2.json has 1000 nodes
@@ -91,8 +92,7 @@ def eigenvector_centrality_strategy(G, num_iterations, num_seeds):
     '''
 
     centralities_dict = nx.eigenvector_centrality(G)
-    sorted_centralities = sorted(centralities_dict.items(), 
-        key=operator.itemgetter(1), reverse=True)[:num_seeds]
+    sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
@@ -108,8 +108,7 @@ def katz_centrality_strategy(G, num_iterations, num_seeds):
     '''
 
     centralities_dict = nx.katz_centrality(G)
-    sorted_centralities = sorted(centralities_dict.items(), 
-        key=operator.itemgetter(1), reverse=True)[:num_seeds]
+    sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
@@ -125,8 +124,7 @@ def degree_centrality_strategy(G, num_iterations, num_seeds):
     '''
 
     centralities_dict = nx.degree_centrality(G)
-    sorted_centralities = sorted(centralities_dict.items(), 
-        key=operator.itemgetter(1), reverse=True)[:num_seeds]
+    sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
@@ -162,8 +160,7 @@ def betweenness_centrality_strategy(G, num_iterations, num_seeds):
     '''
 
     centralities_dict = nx.betweenness_centrality(G)
-    sorted_centralities = sorted(centralities_dict.items(), 
-        key=operator.itemgetter(1), reverse=True)[:num_seeds]
+    sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
