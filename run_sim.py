@@ -104,10 +104,22 @@ def run_simulations(strategies_dict, num_seeds, graph):
     print("----------------------- OVERALL RESULTS -----------------------")
     print(results_dict)
 
-def main():
+def get_user_input():
+    ''' Gets graph filename and strategies from user input.
+
+    Args:   n/a
+
+    Returns: ofilename, list of strategies                   
     '''
-    Expected usage is run_sim.py <inputgraph_filename> <strategy> <strategy1> ... num_seeds
-    
+    input_file = raw_input("Enter the graph filename (leave out .json extension) -> ")
+    strategy_str = raw_input("Enter the strategies to run separated by spaces " +
+                    "(leave blank to run all strategies in current folder) -> ")
+    strategy_lst = strategy_str.strip().split()
+    return input_file.strip(), strategy_lst
+
+def main():
+    ''' Runs different strategies against one another
+
     If no strategies are specified, then by default, the program will test
     all strategies in the current folder against one another
 
@@ -117,20 +129,20 @@ def main():
     of pandemaniac.py. 
     '''
 
-    # Get cmd arguments
-    input_file = sys.argv[1]
-    if ('.json') in input_file:
-        input_file = input_file[:-5]
+    # Get user inputs
+    input_file, specified_strategies = get_user_input()
     json_input = input_file + '.json'
-    specified_strategies = sys.argv[2:len(sys.argv)-1]
-    num_seeds = int(sys.argv[-1])
+    # INPUT FILE IS OF FORM x.y.z
+    # where x is number of players, y is the number of seeds, z is ID # for graph
+    num_seeds = int(input_file.split('.')[1])
+    #print(num_seeds)
 
     # Read in JSON graph
     graph = load_graph(json_input)
 
     # Load in strategies information
     strategies_dict = load_strategies(specified_strategies, input_file)
-    print(strategies_dict)
+    #print(strategies_dict)
     # Run the 50 iterations now
     run_simulations(strategies_dict, num_seeds, graph)
 

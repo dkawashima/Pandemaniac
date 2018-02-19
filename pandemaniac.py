@@ -5,7 +5,7 @@ import networkx as nx
 import operator
 import sys
 from heapq import nlargest
-
+from networkx.algorithms.approximation import min_weighted_vertex_cover
 # testgraph1.json has 500 nodes
 # testgraph2.json has 1000 nodes
 
@@ -27,8 +27,18 @@ def main():
             output = eigenvector_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'b':
             output = betweenness_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'c':
+            output = clustering_coefficient_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'k':
             output = katz_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'm':
+            output = mst_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 's':
+            output = dominating_set_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'v':
+            output = vertex_cover_strategy(G, NUM_ITERATIONS, num_seeds)
+        else:
+            assert(False)
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
         output_filename = raw_file + "_" + strategy + '.txt'
         output_list(output_filename, output)
@@ -38,11 +48,15 @@ def main():
 def get_user_input():
     ''' Gets user input for name of graph and strategies to run
     where the strategies are:
-    R/r : Random
+    R/r: Random
     D/d: Degree centrality
     B/b: Betweenness centrality
     K/k: Katz centrality
     E/e: Eigenvector centrality
+    C/c: Clustering coefficient
+    M/m: Minimum spanning tree
+    S/s: Dominating set
+    V/v : Vertex cover
 
     Also extrapolates the num_seeds from the name of the graph
 
@@ -55,7 +69,7 @@ def get_user_input():
     filename_split = filename.strip().split('.')
     assert(len(filename_split) == 3)
     num_seeds = filename_split[1]
-    strategy_str = raw_input ("Enter the strategies to run separated by spaces -> ")
+    strategy_str = raw_input("Enter the strategies to run separated by spaces -> ")
     strategy_lst = strategy_str.strip().split()
 
     return filename, int(num_seeds), strategy_lst
@@ -79,6 +93,136 @@ def load_graph(filename):
     # Create an undirected graph
     G = nx.Graph(graph)
     return G
+
+def vertex_cover_strategy(G, num_iterations, num_seeds):
+    ''' Picks top degreed nodes from vertex cover (VC) of 
+    input graph. If there are less nodes in the VC than 
+    num_seeds, then we pick from top degreed nodes of the 
+    input graph.
+
+    Given an undirected graph G = (V, E) and a function w 
+    assigning nonnegative weights to its vertices, 
+    find a minimum weight subset of V such that each edge in E is 
+    incident to at least one vertex in the subset.
+    
+    Note: every vertex cover is a dominating set, but not every
+    dominating set is a vertex cover
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on VC strategy
+    '''
+
+    vc_nodes = min_weighted_vertex_cover(G)
+    nodes_to_remove = G.nodes() - vc_nodes
+    subgraph = G.copy()
+    subgraph.remove_nodes_from(nodes_to_remove)
+    number_of_nodes = num_seeds
+    if len(vc_nodes) < num_seeds:
+        number_of_nodes = len(vc_nodes)
+    centralities_dict = nx.degree_centrality(subgraph)
+    sorted_centralities = nlargest(number_of_nodes, centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_centralities]
+
+    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
+    i = 0
+    while (len(node_keys) != num_seeds):
+        if nodes_top_degrees[i] not in node_keys:
+            node_keys.append(nodes_top_degrees[i])
+        i += 1
+    assert(len(node_keys) == num_seeds)
+    return node_keys * num_iterations
+
+def dominating_set_strategy(G, num_iterations, num_seeds):
+    ''' Picks top degreed nodes from dominating set(ds) of 
+    input graph. If there are less nodes in the ds than 
+    num_seeds, then we pick from top degreed nodes of the 
+    input graph.
+
+    A dominating set for a graph G = (V, E) is a node subset 
+    D of V such that every node not in D is adjacent to at least 
+    one member of D.
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on DS strategy
+    '''
+
+    ds_nodes = nx.dominating_set(G)
+    nodes_to_remove = G.nodes() - ds_nodes
+    subgraph = G.copy()
+    subgraph.remove_nodes_from(nodes_to_remove)
+    assert(len(G.nodes()) > len(subgraph.nodes()))
+    number_of_nodes = num_seeds
+    if len(ds_nodes) < num_seeds:
+        number_of_nodes = len(ds_nodes)
+    centralities_dict = nx.degree_centrality(subgraph)
+    sorted_centralities = nlargest(number_of_nodes, centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_centralities]
+
+    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
+    i = 0
+    while (len(node_keys) != num_seeds):
+        if nodes_top_degrees[i] not in node_keys:
+            node_keys.append(nodes_top_degrees[i])
+        i += 1
+    assert(len(node_keys) == num_seeds)
+    return node_keys * num_iterations
+
+def mst_strategy(G, num_iterations, num_seeds):
+    ''' Picks top degreed nodes from MST of input graph.
+    If there are less nodes in the MST than num_seeds, 
+    then we pick from top degreed nodes of the input graph
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on MST
+    '''
+
+    mst = nx.minimum_spanning_tree(G)
+    number_of_nodes = num_seeds
+    if len(mst) < num_seeds:
+        number_of_nodes = len(mst)
+    centralities_dict = nx.degree_centrality(mst)
+    sorted_centralities = nlargest(number_of_nodes, centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_centralities]
+
+    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
+    i = 0
+    while (len(node_keys) != num_seeds):
+        if nodes_top_degrees[i] not in node_keys:
+            node_keys.append(nodes_top_degrees[i])
+        i += 1
+    assert(len(node_keys) == num_seeds)
+    return node_keys * num_iterations
+
+def clustering_coefficient_strategy(G, num_iterations, num_seeds):
+    ''' Picks the top nodes based on clustering coefficient
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on clustering coefficients
+    '''
+
+    clustering_dict = nx.clustering(G)
+    sorted_clustering_nodes = nlargest(num_seeds, clustering_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_clustering_nodes]
+    return node_keys * num_iterations
 
 def eigenvector_centrality_strategy(G, num_iterations, num_seeds):
     ''' Picks the top nodes based on eigenvector centrality
