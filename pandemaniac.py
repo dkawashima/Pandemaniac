@@ -39,6 +39,8 @@ def main():
             output = vertex_cover_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'de':
             output = degree_eigenvector_centrality_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'mm':
+            output = multiple_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
         else:
             assert(False)
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
@@ -60,6 +62,7 @@ def get_user_input():
     S/s: Dominating set
     V/v : Vertex cover
     DE/de : Degree/Eigenvalue Centality Mixed Strategy
+    MM/mm : Multiple Mixed Strategy
 
     Also extrapolates the num_seeds from the name of the graph
 
@@ -283,21 +286,86 @@ def degree_eigenvector_centrality_mixed_strategy(G, num_iterations, num_seeds):
         num_iterations --   the number of rounds
         num_seeds --        the number of seed nodes to select
 
-    Returns: list of output nodes based on the degree centrality
+    Returns: list of output nodes comprised of 50% being based on degree centrality,
+    and 50% based on eigenvector centrality
+
+    The following permutation scoted 250-249 over degree centrality on the
+    TA_degree graph on Day 3.
+    7 with degree centrality
+    3 with eigenvector centrality
     '''
 
     degree_centralities_dict = nx.degree_centrality(G)
-    sorted_degree_centralities = nlargest(num_seeds / 2, degree_centralities_dict.items(), key=operator.itemgetter(1))
+    sorted_degree_centralities = nlargest((num_seeds + 1)/ 2, degree_centralities_dict.items(), key=operator.itemgetter(1))
     degree_node_keys = [i[0] for i in sorted_degree_centralities]
 
     eigenvector_centralities_dict = nx.eigenvector_centrality(G)
     eigenvector_centralities_dict = {key: eigenvector_centralities_dict[key] for key in eigenvector_centralities_dict if key not in degree_node_keys}
-    sorted_eigenvector_centralities = nlargest((num_seeds + 1) / 2, eigenvector_centralities_dict.items(), key=operator.itemgetter(1))
+    sorted_eigenvector_centralities = nlargest(num_seeds / 2, eigenvector_centralities_dict.items(), key=operator.itemgetter(1))
     
     node_keys = degree_node_keys + [i[0] for i in sorted_eigenvector_centralities]
 
     return node_keys * num_iterations
 
+def multiple_mixed_strategy(G, num_iterations, num_seeds):
+    ''' Picks the top nodes based on degree centrality
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on the degree centrality
+    '''
+
+    number_of_nodes = num_seeds
+
+    # Degree Centralities (25%)
+    degree_centralities_dict = nx.degree_centrality(G)
+    sorted_degree_centralities = nlargest(num_seeds / 4, degree_centralities_dict.items(), key=operator.itemgetter(1))
+    degree_node_keys = [i[0] for i in sorted_degree_centralities]
+
+    # Eigenvector Centralities (25%)
+    eigenvector_centralities_dict = nx.eigenvector_centrality(G)
+    eigenvector_centralities_dict = {key: eigenvector_centralities_dict[key] for key in eigenvector_centralities_dict if key not in degree_node_keys}
+    sorted_eigenvector_centralities = nlargest(num_seeds / 4, eigenvector_centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys = degree_node_keys + [i[0] for i in sorted_eigenvector_centralities]
+
+    # Vertex Cover (25%)
+    vc_nodes = min_weighted_vertex_cover(G)
+    nodes_to_remove = G.nodes() - vc_nodes
+    subgraph = G.copy()
+    subgraph.remove_nodes_from(nodes_to_remove)
+    if len(vc_nodes) < num_seeds:
+        number_of_nodes = len(vc_nodes)
+    vc_centralities_dict = nx.degree_centrality(subgraph)
+    vc_centralities_dict = {key: vc_centralities_dict[key] for key in vc_centralities_dict if key not in node_keys}
+    sorted_vc_centralities = nlargest(min(num_seeds / 4, number_of_nodes), vc_centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys += [i[0] for i in sorted_vc_centralities]
+
+    # MST (25%)
+    mst = nx.minimum_spanning_tree(G)
+    number_of_nodes = num_seeds
+    if len(mst) < num_seeds:
+        number_of_nodes = len(mst)
+    mst_centralities_dict = nx.degree_centrality(mst)
+    mst_centralities_dict = {key: mst_centralities_dict[key] for key in mst_centralities_dict if key not in node_keys}
+    sorted_mst_centralities = nlargest(min(num_seeds / 4, number_of_nodes), mst_centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys += [i[0] for i in sorted_mst_centralities]
+
+    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
+    i = 0
+    while (len(node_keys) != num_seeds):
+        if nodes_top_degrees[i] not in node_keys:
+            node_keys.append(nodes_top_degrees[i])
+        i += 1
+    assert(len(node_keys) == num_seeds)
+    
+
+    #node_keys = degree_node_keys + [i[0] for i in sorted_eigenvector_centralities]
+
+    return node_keys * num_iterations
 
 def random_strategy(G, num_iterations, num_seeds):
     ''' Basic strategy of picking random nodes 
