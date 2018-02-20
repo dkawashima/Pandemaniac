@@ -37,6 +37,8 @@ def main():
             output = dominating_set_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'v':
             output = vertex_cover_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'de':
+            output = degree_eigenvector_centrality_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
         else:
             assert(False)
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
@@ -57,6 +59,7 @@ def get_user_input():
     M/m: Minimum spanning tree
     S/s: Dominating set
     V/v : Vertex cover
+    DE/de : Degree/Eigenvalue Centality Mixed Strategy
 
     Also extrapolates the num_seeds from the name of the graph
 
@@ -271,6 +274,30 @@ def degree_centrality_strategy(G, num_iterations, num_seeds):
     sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
+
+def degree_eigenvector_centrality_mixed_strategy(G, num_iterations, num_seeds):
+    ''' Picks the top nodes based on degree centrality
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on the degree centrality
+    '''
+
+    degree_centralities_dict = nx.degree_centrality(G)
+    sorted_degree_centralities = nlargest(num_seeds / 2, degree_centralities_dict.items(), key=operator.itemgetter(1))
+    degree_node_keys = [i[0] for i in sorted_degree_centralities]
+
+    eigenvector_centralities_dict = nx.eigenvector_centrality(G)
+    eigenvector_centralities_dict = {key: eigenvector_centralities_dict[key] for key in eigenvector_centralities_dict if key not in degree_node_keys}
+    sorted_eigenvector_centralities = nlargest((num_seeds + 1) / 2, eigenvector_centralities_dict.items(), key=operator.itemgetter(1))
+    
+    node_keys = degree_node_keys + [i[0] for i in sorted_eigenvector_centralities]
+
+    return node_keys * num_iterations
+
 
 def random_strategy(G, num_iterations, num_seeds):
     ''' Basic strategy of picking random nodes 
