@@ -69,7 +69,7 @@ def load_strategies(specified_strategies, input_file):
         # i has form "./x_r.txt" where x is the name of the actual file and 
         # r is the strategy (in this case, random)
         with open(i) as f:
-            if (specified_strategies != [] and i[len(input_file) + 3] not in specified_strategies):
+            if (specified_strategies != [] and i[len(input_file) + 3:-4] not in specified_strategies):
                 continue
             content = [x.strip() for x in f.readlines()]
             # the -4 is to avoid the '.txt' extension, the +3 is to avoid the './' and '_' of the strategy filenames
@@ -135,14 +135,12 @@ def main():
     # INPUT FILE IS OF FORM x.y.z
     # where x is number of players, y is the number of seeds, z is ID # for graph
     num_seeds = int(input_file.split('.')[1])
-    #print(num_seeds)
 
     # Read in JSON graph
     graph = load_graph(json_input)
 
     # Load in strategies information
     strategies_dict = load_strategies(specified_strategies, input_file)
-    #print(strategies_dict)
     # Run the 50 iterations now
     run_simulations(strategies_dict, num_seeds, graph)
 
