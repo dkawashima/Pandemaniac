@@ -335,7 +335,7 @@ def degree_eigenvector_centrality_mixed_strategy(G, num_iterations, num_seeds):
     Returns: list of output nodes comprised of 50% being based on degree centrality,
     and 50% based on eigenvector centrality
 
-    The following permutation scoted 250-249 over degree centrality on the
+    The following permutation scored 250-249 over degree centrality on the
     TA_degree graph on Day 3.
     7 with degree centrality
     3 with eigenvector centrality
