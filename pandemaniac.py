@@ -29,6 +29,8 @@ def main():
             output = betweenness_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'c':
             output = clustering_coefficient_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'cl':
+            output = closeness_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'k':
             output = katz_centrality_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'm':
@@ -41,6 +43,8 @@ def main():
             output = degree_eigenvector_centrality_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'mm':
             output = multiple_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'dc':
+            output = degree_closeness_centrality_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
         else:
             assert(False)
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
@@ -58,10 +62,12 @@ def get_user_input():
     K/k: Katz centrality
     E/e: Eigenvector centrality
     C/c: Clustering coefficient
+    Cl/cl: Closeness centrality
     M/m: Minimum spanning tree
     S/s: Dominating set
     V/v : Vertex cover
-    DE/de : Degree/Eigenvalue Centality Mixed Strategy
+    DE/de : Degree/Eigenvalue Centrality Mixed Strategy
+    DC/dc: Degree/ Closeness Centrality Mixed Strategy
     MM/mm : Multiple Mixed Strategy
 
     Also extrapolates the num_seeds from the name of the graph
@@ -262,6 +268,22 @@ def katz_centrality_strategy(G, num_iterations, num_seeds):
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
+def closeness_centrality_strategy(G, num_iterations, num_seeds):
+    ''' Picks the top nodes based on closeness centrality
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on the closeness centrality
+    '''
+
+    centralities_dict = nx.closeness_centrality(G)
+    sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_centralities]
+    return node_keys * num_iterations
+
 def degree_centrality_strategy(G, num_iterations, num_seeds):
     ''' Picks the top nodes based on degree centrality
 
@@ -276,6 +298,30 @@ def degree_centrality_strategy(G, num_iterations, num_seeds):
     centralities_dict = nx.degree_centrality(G)
     sorted_centralities = nlargest(num_seeds, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
+    return node_keys * num_iterations
+
+def degree_closeness_centrality_mixed_strategy(G, num_iterations, num_seeds):
+    ''' Picks the top nodes based on mixed strategy of degree/closeness
+
+    Args:
+        G --                the input graph
+        num_iterations --   the number of rounds
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes comprised of 50% being based on degree centrality,
+    and 50% based on closeness centrality
+    '''
+
+    degree_centralities_dict = nx.degree_centrality(G)
+    sorted_degree_centralities = nlargest((num_seeds + 1)/ 2, degree_centralities_dict.items(), key=operator.itemgetter(1))
+    degree_node_keys = [i[0] for i in sorted_degree_centralities]
+
+    closeness_centralities_dict = nx.eigenvector_centrality(G)
+    closeness_centralities_dict = {key: closeness_centralities_dict[key] for key in closeness_centralities_dict if key not in degree_node_keys}
+    sorted_closeness_centralities = nlargest(num_seeds / 2, closeness_centralities_dict.items(), key=operator.itemgetter(1))
+    
+    node_keys = degree_node_keys + [i[0] for i in sorted_closeness_centralities]
+
     return node_keys * num_iterations
 
 def degree_eigenvector_centrality_mixed_strategy(G, num_iterations, num_seeds):
@@ -308,7 +354,7 @@ def degree_eigenvector_centrality_mixed_strategy(G, num_iterations, num_seeds):
     return node_keys * num_iterations
 
 def multiple_mixed_strategy(G, num_iterations, num_seeds):
-    ''' Picks the top nodes based on degree centrality
+    ''' Picks the top nodes based on four mixed strategies
 
     Args:
         G --                the input graph
