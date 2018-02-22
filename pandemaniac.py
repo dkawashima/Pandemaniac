@@ -79,7 +79,7 @@ def final_strategy(G, num_seeds):
     eigen = eigenvector_centrality_strategy(G, seeds_to_generate)
     closeness = closeness_centrality_strategy(G, seeds_to_generate)
     degree = degree_centrality_strategy(G, seeds_to_generate)
-    total_ranks = defaultdict(int)
+    total_ranks = defaultdict(float)
     offset = 4.0
     decrement = 0.2
 
