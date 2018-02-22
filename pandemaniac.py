@@ -45,6 +45,18 @@ def main():
             output = multiple_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
         elif strategy == 'dc':
             output = degree_closeness_centrality_mixed_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'pr':
+            output = pagerank_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'tri':
+            output = triangle_clustering_strategy(G, NUM_ITERATIONS, num_seeds)
+        # elif strategy == 'vi':
+        #     output = vitality_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'cq':
+            output = clique_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'an':
+            output = average_neighbor_degree_strategy(G, NUM_ITERATIONS, num_seeds)
+        elif strategy == 'ad':
+            output = average_degree_connectivity_strategy(G, NUM_ITERATIONS, num_seeds)
         else:
             assert(False)
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
@@ -69,7 +81,12 @@ def get_user_input():
     DE/de : Degree/Eigenvalue Centrality Mixed Strategy
     DC/dc: Degree/ Closeness Centrality Mixed Strategy
     MM/mm : Multiple Mixed Strategy
-
+    PR/pr: Pagerank strategy
+    tri: number of triangles
+    vi: closeness vitality
+    cq: number of cliques
+    an: average degree of neighbors
+    ad: average degree of neighbors but it's sorted by the degree of the node
     Also extrapolates the num_seeds from the name of the graph
 
     Arguments: n/a
@@ -449,6 +466,42 @@ def betweenness_centrality_strategy(G, num_iterations, num_seeds):
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
+def pagerank_strategy(G, num_iterations, num_seeds):
+    pageranks_dict = nx.pagerank(G)
+    sorted_pageranks = nlargest(num_seeds, pageranks_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_pageranks]
+    return node_keys * num_iterations
+
+def triangle_clustering_strategy(G, num_iterations, num_seeds):
+    triangles_dict = nx.triangles(G)
+    sorted_triangles = nlargest(num_seeds, triangles_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_triangles]
+    return node_keys * num_iterations
+ 
+# takes too long
+# def vitality_strategy(G, num_iterations, num_seeds):
+#     vitalities_dict = nx.closeness_vitality(G)
+#     sorted_vitalities = nlargest(num_seeds, vitalities_dict.items(), key=operator.itemgetter(1))
+#     node_keys = [i[0] for i in sorted_vitalities]
+#     return node_keys * num_iterations
+
+def clique_strategy(G, num_iterations, num_seeds):
+    cliques_dict = nx.number_of_cliques(G)
+    sorted_cliques = nlargest(num_seeds, cliques_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_cliques]
+    return node_keys * num_iterations
+
+def average_neighbor_degree_strategy(G, num_iterations, num_seeds):
+    neighbors_dict = nx.average_neighbor_degree(G)
+    sorted_neighbors = nlargest(num_seeds, neighbors_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_neighbors]
+    return node_keys * num_iterations
+
+def average_degree_connectivity_strategy(G, num_iterations, num_seeds):
+    neighbors_dict = nx.average_degree_connectivity(G)
+    sorted_neighbors = nlargest(num_seeds, neighbors_dict.items(), key=operator.itemgetter(1))
+    node_keys = [i[0] for i in sorted_neighbors]
+    return node_keys * num_iterations
 
 def output_list(filename, seed_values):
     ''' Writes the given seed values to an output file for submisson
@@ -465,3 +518,12 @@ def output_list(filename, seed_values):
 
 main()
 
+'''
+Notes:
+We can implement blending by summing different rankings to find the best nodes, or
+using majority voting from multiple classifiers.
+We should parse the nodes we produce so that we don't use nodes that are in the top
+N * 1.2 nodes when using degree. Also, we might want to make sure that the nodes
+aren't all in the same cluster, so we can reach all parts of the graph.
+
+'''
