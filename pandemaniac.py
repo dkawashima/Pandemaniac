@@ -79,6 +79,7 @@ def final_strategy(G, num_seeds):
     eigen = eigenvector_centrality_strategy(G, seeds_to_generate)
     closeness = closeness_centrality_strategy(G, seeds_to_generate)
     degree = degree_centrality_strategy(G, seeds_to_generate)
+    vertex = vertex_cover_strategy(G, seeds_to_generate)
     total_ranks = defaultdict(float)
     offset = 4.0
     decrement = 0.2
@@ -88,6 +89,7 @@ def final_strategy(G, num_seeds):
         total_ranks[eigen[i]] += offset
         total_ranks[closeness[i]] += offset
         total_ranks[degree[i]] += offset
+        total_ranks[vertex[i]] += offset
         offset -= decrement
     sorted_ranks = nlargest(num_seeds, total_ranks.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_ranks]
@@ -180,7 +182,7 @@ def vertex_cover_strategy(G, num_seeds):
     sorted_centralities = nlargest(number_of_nodes, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
 
-    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    nodes_top_degrees = degree_centrality_strategy(G, num_seeds)
     # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
     i = 0
     while (len(node_keys) != num_seeds):
@@ -219,7 +221,7 @@ def dominating_set_strategy(G, num_seeds):
     sorted_centralities = nlargest(number_of_nodes, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
 
-    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    nodes_top_degrees = degree_centrality_strategy(G, num_seeds)
     # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
     i = 0
     while (len(node_keys) != num_seeds):
@@ -249,7 +251,7 @@ def mst_strategy(G, num_seeds):
     sorted_centralities = nlargest(number_of_nodes, centralities_dict.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_centralities]
 
-    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    nodes_top_degrees = degree_centrality_strategy(G, num_seeds)
     # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
     i = 0
     while (len(node_keys) != num_seeds):
@@ -462,7 +464,7 @@ def multiple_mixed_strategy(G, num_seeds):
     sorted_mst_centralities = nlargest(min(num_seeds / 4, number_of_nodes), mst_centralities_dict.items(), key=operator.itemgetter(1))
     node_keys += [i[0] for i in sorted_mst_centralities]
 
-    nodes_top_degrees = degree_centrality_strategy(G, 1, num_seeds)
+    nodes_top_degrees = degree_centrality_strategy(G, num_seeds)
     # In case we need more seed nodes, we simply pull from the top degreed nodes of the input graph
     i = 0
     while (len(node_keys) != num_seeds):
