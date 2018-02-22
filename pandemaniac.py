@@ -62,8 +62,17 @@ def main():
     return
 
 def final_strategy(G, num_seeds):
-    '''
-    Uses degree, triangle, eigenvector, closeness (25/25/25/25)
+    ''' Picks top degreed nodes based on an equal weighting 
+    and conglomeration of four strategies:
+
+    degree centrality, number of triangles, eigenvector
+    centrality, and closeness centrality
+
+    Args:
+        G --                the input graph
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on this mixed strategy
     '''
     seeds_to_generate = int(num_seeds * 1.5)
     triangle = triangles_strategy(G, seeds_to_generate)
@@ -71,8 +80,15 @@ def final_strategy(G, num_seeds):
     closeness = closeness_centrality_strategy(G, seeds_to_generate)
     degree = degree_centrality_strategy(G, seeds_to_generate)
     total_ranks = defaultdict(int)
-    for i in range(1, seeds_to_generate + 1):
-        total_ranks[triangle[i-1]] += (seeds_to_generate - i)
+    offset = 4.0
+    decrement = 0.2
+
+    for i in range(0, seeds_to_generate):
+        total_ranks[triangle[i]] += offset
+        total_ranks[eigen[i]] += offset
+        total_ranks[closeness[i]] += offset
+        total_ranks[degree[i]] += offset
+        offset -= decrement
     sorted_ranks = nlargest(num_seeds, total_ranks.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_ranks]
     return node_keys 
