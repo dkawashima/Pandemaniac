@@ -76,7 +76,7 @@ def load_strategies(specified_strategies, input_file):
             strategies_dict[i[len(input_file) + 3:-4]] = content
     return strategies_dict
 
-def run_simulations(strategies_dict, num_seeds, graph):
+def run_simulations(strategies_dict, num_seeds, graph, ta=False):
     ''' Runs 50 iterations of sim.py using specified strategies. Outputs
     the results of each run and also the final count of how many times each
     strategy took the most number of nodes in an iteration/run.
@@ -131,11 +131,12 @@ def main():
 
     # Get user inputs
     input_file, specified_strategies = get_user_input()
+
     json_input = input_file + '.json'
     # INPUT FILE IS OF FORM x.y.z
     # where x is number of players, y is the number of seeds, z is ID # for graph
-    num_seeds = int(input_file.split('.')[1])
-
+    # num_seeds = int(input_file.split('.')[1])
+    num_seeds = 12
     # Read in JSON graph
     graph = load_graph(json_input)
 

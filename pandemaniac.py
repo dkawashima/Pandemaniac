@@ -449,24 +449,6 @@ def betweenness_centrality_strategy(G, num_iterations, num_seeds):
     node_keys = [i[0] for i in sorted_centralities]
     return node_keys * num_iterations
 
-def random_strategy(G, num_iterations, num_seeds):
-    ''' Basic strategy of picking random nodes 
-
-    Args:
-        G --                the input graph
-        num_iterations --   the number of rounds
-        num_seeds --        the number of seed nodes to select
-
-    Returns: list of output nodes based on the random strategy
-    '''
-
-    # The output file should contain (num_seeds * num_iterations) lines
-    all_seed_values = []
-    for i in range(num_iterations):
-        seed_values = np.random.choice(len(G), num_seeds, 
-            replace=False).tolist()
-        all_seed_values.extend(seed_values)
-    return all_seed_values
 
 def output_list(filename, seed_values):
     ''' Writes the given seed values to an output file for submisson
