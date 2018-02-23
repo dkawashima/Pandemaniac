@@ -13,7 +13,7 @@ from collections import defaultdict
 def main():
     ''' Main function: Gets user input and creates necessary output files
     '''
-    filename, num_players, num_seeds, strategies = get_user_input()
+    filename, num_players, num_seeds, strategies, proportions = get_user_input()
     GRAPH_FILENAME = filename + ".json"
 
     G = load_graph(GRAPH_FILENAME)
@@ -53,7 +53,7 @@ def main():
         elif strategy == 'f':
             output = final_strategy(G, num_seeds)
         elif strategy == 'fds':
-            output = first_day_strategy(G, NUM_ITERATIONS)
+            output = first_day_strategy(G, NUM_ITERATIONS, proportions)
         else:
             assert(False)
         if strategy != 'fds':
@@ -64,7 +64,7 @@ def main():
         print(strategy + " successfully generated.")
     return
 
-def get_sorted_ranks(G):
+def get_sorted_ranks(G, seeds_to_generate):
     ''' Picks top 40 nodes based on an equally weighted
     conglomeration of five strategies:
 
@@ -73,11 +73,12 @@ def get_sorted_ranks(G):
 
     Args:
     G -- the input graph
+    seeds_to_generate -- number of nodes for each strat to produce,
+        also the total number of nodes we want after blending
 
     Returns:
     Dict mapping node to importance
     '''
-    seeds_to_generate = 40
     triangle = triangles_strategy(G, seeds_to_generate)
     eigen = eigenvector_centrality_strategy(G, seeds_to_generate)
     closeness = closeness_centrality_strategy(G, seeds_to_generate)
@@ -94,12 +95,11 @@ def get_sorted_ranks(G):
         total_ranks[degree[i]] += offset
         total_ranks[vertex[i]] += offset
         offset -= decrement
-    return nlargest(40, total_ranks.items(), key=operator.itemgetter(1))
+    return nlargest(seeds_to_generate, total_ranks.items(), key=operator.itemgetter(1))
 
-def choose_nodes(sorted_ranks):
+def choose_nodes(sorted_ranks, proportions):
     ''' From the result of get_sorted_ranks,
-    choose 1 from 0-9, 2 from 10-19,
-    3 from 20-29, and 4 from 30-39:
+    choose according to proportions
 
     Args:
     sorted_ranks -- result of get_sorted_ranks (dict of node to importance value)
@@ -113,12 +113,14 @@ def choose_nodes(sorted_ranks):
     # indices[1:3] -> 10-19
     # indices[3:6] -> 20-29
     # indices[6:]  -> 30-39
-    indices[1:3] += 10
-    indices[3:6] += 20
-    indices[6:] += 30
+    slicing_indices = np.cumsum(proportions)
+    indices[slicing_indices[0]:slicing_indices[1]] += 10
+    indices[slicing_indices[1]:slicing_indices[2]] += 20
+    indices[slicing_indices[2]:slicing_indices[3]] += 30
+
     return [sorted_ranks[i][0] for i in indices]
 
-def first_day_strategy(G, NUM_ITERATIONS):
+def first_day_strategy(G, NUM_ITERATIONS, proportions):
     ''' Picks top 40 nodes based on an equal weighting 
     and conglomeration of four strategies, and then 
     chooses 10 to return. Given that the top 40 are ordered
@@ -135,10 +137,10 @@ def first_day_strategy(G, NUM_ITERATIONS):
 
     Returns: list of output nodes based on this mixed strategy
     '''
-    sorted_ranks = get_sorted_ranks(G)
+    sorted_ranks = get_sorted_ranks(G, len(proportions) * 10)
     output = []
     for i in range(NUM_ITERATIONS):
-        output += choose_nodes(sorted_ranks)
+        output += choose_nodes(sorted_ranks, proportions)
     return output
 
 def final_strategy(G, num_seeds):
@@ -208,8 +210,10 @@ def get_user_input():
     num_seeds = filename_split[1]
     strategy_str = raw_input("Enter the strategies to run separated by spaces -> ")
     strategy_lst = strategy_str.strip().split()
+    proportions_str = raw_input("Enter the proportions for fds separated by spaces -> ")
+    proportions_lst = proportions.strip().split()
 
-    return filename, int(num_players), int(num_seeds), strategy_lst
+    return filename, int(num_players), int(num_seeds), strategy_lst, proportions_lst
 
 def load_graph(filename):
     ''' Loads in the graph.
