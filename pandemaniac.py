@@ -211,7 +211,7 @@ def get_user_input():
     strategy_str = raw_input("Enter the strategies to run separated by spaces -> ")
     strategy_lst = strategy_str.strip().split()
     proportions_str = raw_input("Enter the proportions for fds separated by spaces -> ")
-    proportions_lst = proportions.strip().split()
+    proportions_lst = proportions_str.strip().split()
 
     return filename, int(num_players), int(num_seeds), strategy_lst, proportions_lst
 
