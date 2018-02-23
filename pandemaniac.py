@@ -213,7 +213,7 @@ def get_user_input():
     proportions_str = raw_input("Enter the proportions for fds separated by spaces -> ")
     proportions_lst = proportions_str.strip().split()
 
-    return filename, int(num_players), int(num_seeds), strategy_lst, proportions_lst
+    return filename, int(num_players), int(num_seeds), strategy_lst, [int(x) for x in proportions_lst]
 
 def load_graph(filename):
     ''' Loads in the graph.
