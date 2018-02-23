@@ -53,19 +53,30 @@ def main():
         elif strategy == 'f':
             output = final_strategy(G, num_seeds)
         elif strategy == 'fds':
-            output = final_strategy(G, NUM_ITERATIONS)
+            output = first_day_strategy(G, NUM_ITERATIONS)
         else:
             assert(False)
-        final_output = output
         if strategy != 'fds':
-            final_output *= NUM_ITERATIONS
+            output *= NUM_ITERATIONS
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
         output_filename = raw_file + "_" + strategy + '.txt'
-        output_list(output_filename, final_output)
+        output_list(output_filename)
         print(strategy + " successfully generated.")
     return
 
 def get_sorted_ranks(G):
+    ''' Picks top 40 nodes based on an equally weighted
+    conglomeration of five strategies:
+
+    degree centrality, number of triangles, eigenvector
+    centrality, and closeness centrality, vertex cover
+
+    Args:
+    G -- the input graph
+
+    Returns:
+    Dict mapping node to importance
+    '''
     seeds_to_generate = 40
     triangle = triangles_strategy(G, seeds_to_generate)
     eigen = eigenvector_centrality_strategy(G, seeds_to_generate)
@@ -86,6 +97,16 @@ def get_sorted_ranks(G):
     return nlargest(40, total_ranks.items(), key=operator.itemgetter(1))
 
 def choose_nodes(sorted_ranks):
+    ''' From the result of get_sorted_ranks,
+    choose 1 from 0-9, 2 from 10-19,
+    3 from 20-29, and 4 from 30-39:
+
+    Args:
+    sorted_ranks -- result of get_sorted_ranks (dict of node to importance value)
+
+    Returns:
+    List of 10 nodes chosen from top 40 most important
+    '''
     indices = np.random.choice(10, size=10)
     # What different parts of indices correspond to:
     # indices[0]   -> 0-9
@@ -95,8 +116,7 @@ def choose_nodes(sorted_ranks):
     indices[1:3] += 10
     indices[3:6] += 20
     indices[6:] += 30
-    node_keys = [sorted_ranks[i][0] for i in indices]
-    return node_keys
+    return [sorted_ranks[i][0] for i in indices]
 
 def first_day_strategy(G, NUM_ITERATIONS):
     ''' Picks top 40 nodes based on an equal weighting 
