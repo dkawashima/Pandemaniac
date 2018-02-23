@@ -60,7 +60,7 @@ def main():
             output *= NUM_ITERATIONS
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
         output_filename = raw_file + "_" + strategy + '.txt'
-        output_list(output_filename)
+        output_list(output_filename, output)
         print(strategy + " successfully generated.")
     return
 
