@@ -13,7 +13,7 @@ from collections import defaultdict
 def main():
     ''' Main function: Gets user input and creates necessary output files
     '''
-    filename, num_seeds, strategies = get_user_input()
+    filename, num_players, num_seeds, strategies = get_user_input()
     GRAPH_FILENAME = filename + ".json"
 
     G = load_graph(GRAPH_FILENAME)
@@ -52,6 +52,8 @@ def main():
             output = triangles_strategy(G, num_seeds)
         elif strategy == 'f':
             output = final_strategy(G, num_seeds)
+        elif strategy == 'fds':
+            outputs = first_day_strategy(G, num_seeds)
         else:
             assert(False)
         final_output = output * NUM_ITERATIONS
@@ -60,6 +62,53 @@ def main():
         output_list(output_filename, final_output)
         print(strategy + " successfully generated.")
     return
+
+def first_day_strategy(G, num_seeds):
+    ''' Picks top 40 nodes based on an equal weighting 
+    and conglomeration of four strategies, and then 
+    chooses 10 to return. Given that the top 40 are ordered
+    by importance, it chooses 1 from 0-9, 2 from 10-19,
+    3 from 20-29, and 4 from 30-39:
+
+    Strategies:
+    degree centrality, number of triangles, eigenvector
+    centrality, and closeness centrality, vertex cover
+
+    Args:
+        G --                the input graph
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on this mixed strategy
+    '''
+    seeds_to_generate = 40
+    triangle = triangles_strategy(G, seeds_to_generate)
+    eigen = eigenvector_centrality_strategy(G, seeds_to_generate)
+    closeness = closeness_centrality_strategy(G, seeds_to_generate)
+    degree = degree_centrality_strategy(G, seeds_to_generate)
+    vertex = vertex_cover_strategy(G, seeds_to_generate)
+    total_ranks = defaultdict(float)
+    offset = 4.0
+    decrement = 0.2
+
+    for i in range(0, seeds_to_generate):
+        total_ranks[triangle[i]] += offset
+        total_ranks[eigen[i]] += offset
+        total_ranks[closeness[i]] += offset
+        total_ranks[degree[i]] += offset
+        total_ranks[vertex[i]] += offset
+        offset -= decrement
+    sorted_ranks = nlargest(40, total_ranks.items(), key=operator.itemgetter(1))
+    indices = np.random.choice(10, size=10)
+    # What different parts of indices correspond to:
+    # indices[0]   -> 0-9
+    # indices[1:3] -> 10-19
+    # indices[3:6] -> 20-29
+    # indices[6:]  -> 30-39
+    indices[1:3] += 10
+    indices[3:6] += 20
+    indices[6:] += 30
+    node_keys = [sorted_ranks[i][0] for i in indices]
+    return node_keys
 
 def final_strategy(G, num_seeds):
     ''' Picks top degreed nodes based on an equal weighting 
@@ -93,7 +142,7 @@ def final_strategy(G, num_seeds):
         offset -= decrement
     sorted_ranks = nlargest(num_seeds, total_ranks.items(), key=operator.itemgetter(1))
     node_keys = [i[0] for i in sorted_ranks]
-    return node_keys 
+    return node_keys
 
 def get_user_input():
     ''' Gets user input for name of graph and strategies to run
@@ -124,11 +173,12 @@ def get_user_input():
     # where x is number of players, y is the number of seeds, z is ID # for graph
     filename_split = filename.strip().split('.')
     assert(len(filename_split) == 3)
+    num_players = filename_split[0]
     num_seeds = filename_split[1]
     strategy_str = raw_input("Enter the strategies to run separated by spaces -> ")
     strategy_lst = strategy_str.strip().split()
 
-    return filename, int(num_seeds), strategy_lst
+    return filename, int(num_players), int(num_seeds), strategy_lst
 
 def load_graph(filename):
     ''' Loads in the graph.
