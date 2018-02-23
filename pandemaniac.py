@@ -53,33 +53,19 @@ def main():
         elif strategy == 'f':
             output = final_strategy(G, num_seeds)
         elif strategy == 'fds':
-            outputs = first_day_strategy(G, num_seeds)
+            output = final_strategy(G, NUM_ITERATIONS)
         else:
             assert(False)
-        final_output = output * NUM_ITERATIONS
+        final_output = output
+        if strategy != 'fds':
+            final_output *= NUM_ITERATIONS
         raw_file = GRAPH_FILENAME[:-5] # Take out the .json extension
         output_filename = raw_file + "_" + strategy + '.txt'
         output_list(output_filename, final_output)
         print(strategy + " successfully generated.")
     return
 
-def first_day_strategy(G, num_seeds):
-    ''' Picks top 40 nodes based on an equal weighting 
-    and conglomeration of four strategies, and then 
-    chooses 10 to return. Given that the top 40 are ordered
-    by importance, it chooses 1 from 0-9, 2 from 10-19,
-    3 from 20-29, and 4 from 30-39:
-
-    Strategies:
-    degree centrality, number of triangles, eigenvector
-    centrality, and closeness centrality, vertex cover
-
-    Args:
-        G --                the input graph
-        num_seeds --        the number of seed nodes to select
-
-    Returns: list of output nodes based on this mixed strategy
-    '''
+def get_sorted_ranks(G):
     seeds_to_generate = 40
     triangle = triangles_strategy(G, seeds_to_generate)
     eigen = eigenvector_centrality_strategy(G, seeds_to_generate)
@@ -97,7 +83,9 @@ def first_day_strategy(G, num_seeds):
         total_ranks[degree[i]] += offset
         total_ranks[vertex[i]] += offset
         offset -= decrement
-    sorted_ranks = nlargest(40, total_ranks.items(), key=operator.itemgetter(1))
+    return nlargest(40, total_ranks.items(), key=operator.itemgetter(1))
+
+def choose_nodes(sorted_ranks):
     indices = np.random.choice(10, size=10)
     # What different parts of indices correspond to:
     # indices[0]   -> 0-9
@@ -109,6 +97,29 @@ def first_day_strategy(G, num_seeds):
     indices[6:] += 30
     node_keys = [sorted_ranks[i][0] for i in indices]
     return node_keys
+
+def first_day_strategy(G, NUM_ITERATIONS):
+    ''' Picks top 40 nodes based on an equal weighting 
+    and conglomeration of four strategies, and then 
+    chooses 10 to return. Given that the top 40 are ordered
+    by importance, it chooses 1 from 0-9, 2 from 10-19,
+    3 from 20-29, and 4 from 30-39:
+
+    Strategies:
+    degree centrality, number of triangles, eigenvector
+    centrality, and closeness centrality, vertex cover
+
+    Args:
+        G --                the input graph
+        num_seeds --        the number of seed nodes to select
+
+    Returns: list of output nodes based on this mixed strategy
+    '''
+    sorted_ranks = get_sorted_ranks(G)
+    output = []
+    for i in range(NUM_ITERATIONS):
+        output += choose_nodes(sorted_ranks)
+    return output
 
 def final_strategy(G, num_seeds):
     ''' Picks top degreed nodes based on an equal weighting 
