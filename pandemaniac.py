@@ -107,17 +107,9 @@ def choose_nodes(sorted_ranks, proportions):
     Returns:
     List of 10 nodes chosen from top 40 most important
     '''
-    indices = np.random.choice(10, size=10)
-    # What different parts of indices correspond to:
-    # indices[0]   -> 0-9
-    # indices[1:3] -> 10-19
-    # indices[3:6] -> 20-29
-    # indices[6:]  -> 30-39
-    slicing_indices = np.cumsum(proportions)
-    indices[slicing_indices[0]:slicing_indices[1]] += 10
-    indices[slicing_indices[1]:slicing_indices[2]] += 20
-    indices[slicing_indices[2]:slicing_indices[3]] += 30
-
+    indices = []
+    for i, p in enumerate(proportions):
+        indices.extend(10 * i + np.random.choice(10, size=p, replace=False))
     return [sorted_ranks[i][0] for i in indices]
 
 def first_day_strategy(G, NUM_ITERATIONS, proportions):
